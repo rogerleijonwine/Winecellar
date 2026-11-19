@@ -209,7 +209,7 @@ button.fact{text-align:left;font:inherit;color:inherit;background:none;width:100
 <script src="pairing.js"></script>
 <script>
 "use strict";
-const APP_VERSION="mall-1 + skanna";
+const APP_VERSION="mall-1 + skanna 2";
 const VINLISTA_URL="https://claude.ai/artifact/Dtw17TiSKZVdokyzweucLG"; /* vinlistan hos Claude (privat – kräver inloggning) */
 const NOW=new Date().getFullYear();
 const $=s=>document.querySelector(s);
@@ -402,8 +402,8 @@ function openDrink(id){
 }
 function openAdd(){
   $("#sheetBody").innerHTML=`<h3>Lägg till vin</h3>
-    <a class="btn primary block" href="${VINLISTA_URL}#skanna" target="_blank" rel="noopener">📷 Skanna etikett med Claude</a>
-    <p class="note" style="margin:-4px 0 4px">Öppnar din vinlista hos Claude, där Claude läser etiketten och lägger in vinet. Kräver internet. Vinet syns här efter nästa uppdatering av appen. Eller fyll i själv nedan:</p>
+    <button class="btn primary block" type="button" id="scanBtn">📷 Skanna etikett med Claude</button>
+    <p class="note" style="margin:-4px 0 4px">Skanningen görs i din vinlista hos Claude i Safari. Kräver internet. Vinet syns här efter nästa uppdatering av appen. Eller fyll i själv nedan:</p>
     <form id="addForm" style="display:grid;gap:10px">
     <label class="f">Vin<input id="aName" required placeholder="t.ex. Ch. Lynch-Bages"></label>
     <div class="grid2"><label class="f">Producent<input id="aProd"></label><label class="f">Årgång<input id="aYear" type="number" inputmode="numeric"></label></div>
@@ -419,6 +419,28 @@ function openAdd(){
     const wine={name:v("#aName"),producer:v("#aProd"),year:n("#aYear"),region:v("#aRegion")||"Övrigt",country:v("#aCountry"),type:$("#aType").value,style:$("#aType").value,size:$("#aSize").value,qty,bought:qty,buy,value:buy,place:$("#aPlace").value,loc:v("#aLoc")||$("#aPlace").value,src:"Inköpspris (ny post, mobil)"};
     Object.keys(wine).forEach(k=>(wine[k]===null||wine[k]==="")&&delete wine[k]);
     addOp({type:"new",wineId:"m"+Date.now().toString(36),wine,delta:qty,label:`${wine.year||""} ${wine.name}`.trim(),date:today()});closeSheet();toast(`${wine.name} är tillagt.`);});
+}
+/* Skanna etikett: görs i vinlistan hos Claude. Länken öppnas i Safari (inte via appen), där man är inloggad på claude.ai. */
+async function copyScanLink(){
+  const url=VINLISTA_URL+"#skanna"; let ok=false;
+  try{await navigator.clipboard.writeText(url);ok=true;}catch(e){}
+  const f=$("#scanUrl"); if(f){f.select();try{f.setSelectionRange(0,999);}catch(e){}}
+  toast(ok?"Länken är kopierad.":"Markera länken och kopiera den.");
+}
+function openScan(){
+  $("#sheetBody").innerHTML=`<h3>📷 Skanna etikett</h3>
+    <p style="margin:0">Etiketten läses av Claude i din vinlista. Gör så här:</p>
+    <ol style="margin:0;padding-left:20px;display:grid;gap:6px;font-size:15px">
+      <li>Tryck på <b>Kopiera länken</b>.</li>
+      <li>Öppna <b>Safari</b>, tryck i adressfältet, välj <b>Klistra in och gå</b>.</li>
+      <li>Första gången: logga in på Claude. Safari kommer ihåg det sedan.</li>
+      <li>Tryck på <b>Ta eller välj bild</b> (eller <b>📷 Skanna etikett</b> uppe till höger) och fotografera etiketten.</li>
+    </ol>
+    <input id="scanUrl" class="search" readonly value="${esc(VINLISTA_URL)}#skanna" style="font-size:13px">
+    <button class="btn primary block" type="button" id="scanCopy">Kopiera länken</button>
+    <p class="note" style="margin:0">Tips: när vinlistan är öppen i Safari kan du välja <b>Dela → Lägg till bokmärke</b>, så hittar du den snabbt nästa gång.</p>
+    <button class="btn block" data-close>Stäng</button>`;
+  openSheet();
 }
 function addOp(o){o.id=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());o.at=new Date().toISOString();ops.push(o);saveOps();render();}
 function openSheet(){const d=$("#sheet");if(!d.open)d.showModal();}
@@ -557,6 +579,8 @@ document.addEventListener("click",e=>{
   if(t.closest("[data-close]")){closeSheet();return;}
   const un=t.closest("[data-undo]");if(un){ops=ops.filter(o=>o.id!==un.dataset.undo);saveOps();render();return;}
   if(t.id==="addBtn"){openAdd();return;}
+  if(t.id==="scanBtn"){openScan();return;}
+  if(t.id==="scanCopy"){copyScanLink();return;}
   if(t.id==="exportBtn"){exportOps();return;}
   if(t.id==="refreshBtn"){refresh();return;}
   if(t.id==="forgetBtn"){ls.del("k");try{sessionStorage.removeItem("k");}catch(e){}K=null;snap=null;$("#pw").value="";showLock("Källaren är låst.");return;}
