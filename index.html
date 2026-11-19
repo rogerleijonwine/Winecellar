@@ -54,6 +54,8 @@ select{border:1px solid var(--line);background:var(--surface);border-radius:8px;
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;font-weight:600;text-align:center}
 .btn.primary{background:var(--claret);border-color:var(--claret);color:var(--surface)}
 .btn.block{display:block;width:100%}
+a.btn{text-decoration:none;color:inherit}
+a.btn.primary{color:var(--surface)}
 .btn:disabled{opacity:.5}
 /* list */
 .ghead{font-size:11.5px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--claret);padding:16px 2px 6px;display:flex;justify-content:space-between;gap:8px}
@@ -207,7 +209,8 @@ button.fact{text-align:left;font:inherit;color:inherit;background:none;width:100
 <script src="pairing.js"></script>
 <script>
 "use strict";
-const APP_VERSION="mall-1";
+const APP_VERSION="mall-1 + skanna";
+const VINLISTA_URL="https://claude.ai/artifact/Dtw17TiSKZVdokyzweucLG"; /* vinlistan hos Claude (privat – kräver inloggning) */
 const NOW=new Date().getFullYear();
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -399,6 +402,8 @@ function openDrink(id){
 }
 function openAdd(){
   $("#sheetBody").innerHTML=`<h3>Lägg till vin</h3>
+    <a class="btn primary block" href="${VINLISTA_URL}#skanna" target="_blank" rel="noopener">📷 Skanna etikett med Claude</a>
+    <p class="note" style="margin:-4px 0 4px">Öppnar din vinlista hos Claude, där Claude läser etiketten och lägger in vinet. Kräver internet. Vinet syns här efter nästa uppdatering av appen. Eller fyll i själv nedan:</p>
     <form id="addForm" style="display:grid;gap:10px">
     <label class="f">Vin<input id="aName" required placeholder="t.ex. Ch. Lynch-Bages"></label>
     <div class="grid2"><label class="f">Producent<input id="aProd"></label><label class="f">Årgång<input id="aYear" type="number" inputmode="numeric"></label></div>
