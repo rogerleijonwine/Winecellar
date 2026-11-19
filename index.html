@@ -188,6 +188,16 @@ button.fact{text-align:left;font:inherit;color:inherit;background:none;width:100
   </form>
 </div>
 
+<div id="launch" class="lock" hidden>
+  <div class="lockbox">
+    <div style="font-size:44px">🍷</div>
+    <h1>Vinkällaren</h1>
+    <p class="sub">Öppnar vinlistan hos Claude…</p>
+    <button class="btn primary block" type="button" id="launchGo">Öppna nu</button>
+    <button class="btn block" type="button" id="launchStay">Stanna i appen</button>
+  </div>
+</div>
+
 <div id="app" hidden>
   <header class="top">
     <div class="trow"><h1>Vinkällaren</h1><span class="sub num" id="hdrTotal"></span></div>
@@ -209,7 +219,7 @@ button.fact{text-align:left;font:inherit;color:inherit;background:none;width:100
 <script src="pairing.js"></script>
 <script>
 "use strict";
-const APP_VERSION="mall-1 + skanna 5";
+const APP_VERSION="mall-1 + skanna 5 + autostart";
 const VINLISTA_URL="https://claude.ai/artifact/Dtw17TiSKZVdokyzweucLG"; /* vinlistan hos Claude (privat – kräver inloggning) */
 const NOW=new Date().getFullYear();
 const $=s=>document.querySelector(s);
@@ -249,6 +259,23 @@ async function boot(){
     // ny version av appen installerad → ladda om en gång
     navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadCtl&&!window.__reloading){window.__reloading=true;location.reload();}});
   }
+  if(await autoLaunch())return;
+  await unlockOrLock();
+}
+/* öppna vinlistan hos Claude automatiskt vid start (bara uppkopplad och utan osynkade ändringar) */
+function openClaude(){try{sessionStorage.setItem("launched","1");}catch(e){}location.href=VINLISTA_URL;}
+function autoLaunch(){
+  let done=false;try{done=sessionStorage.getItem("launched")==="1";}catch(e){}
+  if(!ls.get("autoOpen",true)||!navigator.onLine||ops.length||done||/[?&]app\b/.test(location.search))return Promise.resolve(false);
+  return new Promise(res=>{
+    $("#launch").hidden=false;
+    const t=setTimeout(()=>{openClaude();},1200);
+    $("#launchGo").onclick=()=>{clearTimeout(t);openClaude();};
+    $("#launchStay").onclick=()=>{clearTimeout(t);try{sessionStorage.setItem("launched","1");}catch(e){}$("#launch").hidden=true;unlockOrLock();};
+    res(true);
+  });
+}
+async function unlockOrLock(){
   const raw=ls.get("k",null)||(()=>{try{return sessionStorage.getItem("k");}catch(e){return null;}})();
   if(raw){try{K=await importK(b64d(raw));await loadData(false);return;}catch(e){K=null;}}
   showLock();
@@ -538,6 +565,10 @@ function renderSync(){
   </div>
   <div class="panel"><h2>Data</h2><p class="sub" style="margin-top:0">Källarkopian är från <b>${fmtDate(snap.generatedAt)}</b>${snap.lastRun?`, priser från ${fmtDate(snap.lastRun)}`:""}. ${navigator.onLine?"Du är uppkopplad.":"Du är offline."}</p>
     <button class="btn block" id="refreshBtn">Hämta senaste</button></div>
+  <div class="panel"><h2>Vinlistan hos Claude</h2>
+    <button class="btn primary block" id="claudeBtn">Öppna vinlistan</button>
+    <label class="sub" style="display:flex;gap:8px;align-items:center;margin-top:12px"><input type="checkbox" id="autoOpen" ${ls.get("autoOpen",true)?"checked":""} style="width:auto"> Öppna vinlistan automatiskt när appen startas</label>
+    <p class="note">Gäller bara när du är uppkopplad och inte har osynkade ändringar. Vid start kan du trycka <b>Stanna i appen</b>.</p></div>
   <div class="panel"><h2>Säkerhet</h2><p class="sub" style="margin-top:0">${ls.get("k",null)?"Lösenordet är ihågkommet på den här enheten.":"Lösenordet frågas varje gång appen startas."}</p>
     <button class="btn block" id="forgetBtn">Lås och glöm lösenordet på enheten</button><p class="note">Appversion ${APP_VERSION}</p></div>`;
 }
@@ -575,11 +606,12 @@ document.addEventListener("click",e=>{
   if(t.id==="scanBtn"){openScan();return;}
   if(t.id==="exportBtn"){exportOps();return;}
   if(t.id==="refreshBtn"){refresh();return;}
+  if(t.id==="claudeBtn"){openClaude();return;}
   if(t.id==="forgetBtn"){ls.del("k");try{sessionStorage.removeItem("k");}catch(e){}K=null;snap=null;$("#pw").value="";showLock("Källaren är låst.");return;}
 });
 document.addEventListener("input",e=>{if(e.target.id==="q"){ui.q=e.target.value;ls.set("ui",ui);const pos=e.target.selectionStart;render();const q=$("#q");q.focus();q.setSelectionRange(pos,pos);}});
 document.addEventListener("submit",e=>{if(e.target.id==="foodForm"){e.preventDefault();ui.dish=$("#dish").value;saveUi();$("#dish").blur();render();}});
-document.addEventListener("change",e=>{if(e.target.id==="sort"){ui.sort=e.target.value;ls.set("ui",ui);render();}});
+document.addEventListener("change",e=>{if(e.target.id==="autoOpen"){ls.set("autoOpen",e.target.checked);toast(e.target.checked?"Vinlistan öppnas automatiskt vid start.":"Appen öppnas direkt vid start.");return;}if(e.target.id==="sort"){ui.sort=e.target.value;ls.set("ui",ui);render();}});
 $("#sheet").addEventListener("click",e=>{if(e.target.id==="sheet")closeSheet();});
 window.addEventListener("online",()=>{if(snap){render();refresh(true);}});
 window.addEventListener("offline",()=>{if(snap)render();});
