@@ -209,7 +209,7 @@ button.fact{text-align:left;font:inherit;color:inherit;background:none;width:100
 <script src="pairing.js"></script>
 <script>
 "use strict";
-const APP_VERSION="mall-1 + skanna 2";
+const APP_VERSION="mall-1 + skanna 3";
 const VINLISTA_URL="https://claude.ai/artifact/Dtw17TiSKZVdokyzweucLG"; /* vinlistan hos Claude (privat – kräver inloggning) */
 const NOW=new Date().getFullYear();
 const $=s=>document.querySelector(s);
@@ -420,26 +420,19 @@ function openAdd(){
     Object.keys(wine).forEach(k=>(wine[k]===null||wine[k]==="")&&delete wine[k]);
     addOp({type:"new",wineId:"m"+Date.now().toString(36),wine,delta:qty,label:`${wine.year||""} ${wine.name}`.trim(),date:today()});closeSheet();toast(`${wine.name} är tillagt.`);});
 }
-/* Skanna etikett: görs i vinlistan hos Claude. Länken öppnas i Safari (inte via appen), där man är inloggad på claude.ai. */
-async function copyScanLink(){
-  const url=VINLISTA_URL+"#skanna"; let ok=false;
-  try{await navigator.clipboard.writeText(url);ok=true;}catch(e){}
-  const f=$("#scanUrl"); if(f){f.select();try{f.setSelectionRange(0,999);}catch(e){}}
-  toast(ok?"Länken är kopierad.":"Markera länken och kopiera den.");
-}
+/* Skanna etikett: görs i vinlistan hos Claude (Claude-appen → Artifacts → Min vinkällare). */
 function openScan(){
   $("#sheetBody").innerHTML=`<h3>📷 Skanna etikett</h3>
     <p style="margin:0">Etiketten läses av Claude i din vinlista. Gör så här:</p>
     <ol style="margin:0;padding-left:20px;display:grid;gap:6px;font-size:15px">
-      <li>Tryck på <b>Kopiera länken</b>.</li>
-      <li>Öppna <b>Safari</b>, tryck i adressfältet, välj <b>Klistra in och gå</b>.</li>
-      <li>Första gången: logga in på Claude. Safari kommer ihåg det sedan.</li>
-      <li>Tryck på <b>Ta eller välj bild</b> (eller <b>📷 Skanna etikett</b> uppe till höger) och fotografera etiketten.</li>
+      <li>Öppna <b>Claude-appen</b>.</li>
+      <li>Öppna sidomenyn (☰ eller din profil) och välj <b>Artifacts</b>.</li>
+      <li>Öppna <b>Min vinkällare</b>.</li>
+      <li>Tryck på <b>📷 Skanna etikett</b> uppe till höger och fotografera etiketten.</li>
+      <li>Kontrollera uppgifterna, fyll i antal och pris och tryck på <b>Spara</b>.</li>
     </ol>
-    <input id="scanUrl" class="search" readonly value="${esc(VINLISTA_URL)}#skanna" style="font-size:13px">
-    <button class="btn primary block" type="button" id="scanCopy">Kopiera länken</button>
-    <p class="note" style="margin:0">Tips: när vinlistan är öppen i Safari kan du välja <b>Dela → Lägg till bokmärke</b>, så hittar du den snabbt nästa gång.</p>
-    <button class="btn block" data-close>Stäng</button>`;
+    <p class="note" style="margin:0">Länkar till claude.ai öppnas i Claude-appen, som bara visar vinlistan via fliken Artifacts. Vinet syns här i appen efter nästa uppdatering (varje natt, eller direkt med <b>Mobilapp → Uppdatera appen nu</b> i vinlistan).</p>
+    <button class="btn primary block" data-close>OK</button>`;
   openSheet();
 }
 function addOp(o){o.id=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());o.at=new Date().toISOString();ops.push(o);saveOps();render();}
@@ -580,7 +573,6 @@ document.addEventListener("click",e=>{
   const un=t.closest("[data-undo]");if(un){ops=ops.filter(o=>o.id!==un.dataset.undo);saveOps();render();return;}
   if(t.id==="addBtn"){openAdd();return;}
   if(t.id==="scanBtn"){openScan();return;}
-  if(t.id==="scanCopy"){copyScanLink();return;}
   if(t.id==="exportBtn"){exportOps();return;}
   if(t.id==="refreshBtn"){refresh();return;}
   if(t.id==="forgetBtn"){ls.del("k");try{sessionStorage.removeItem("k");}catch(e){}K=null;snap=null;$("#pw").value="";showLock("Källaren är låst.");return;}
